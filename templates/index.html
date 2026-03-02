@@ -1,52 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket AI Processor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6 font-sans">
+import os
+import json
+import base64
+import pandas as pd
+import google.generativeai as genai
+from flask import Flask, request, render_template, send_file
 
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-10">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-800">Ticket Sorter</h1>
-            <p class="text-slate-500 mt-2">Upload your PDF to extract data</p>
-        </div>
+app = Flask(__name__)
 
-        <form action="/process" method="POST" enctype="multipart/form-data" id="uploadForm">
-            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-                <input type="file" name="file" id="fileInput" accept="application/pdf" class="hidden">
-                <label for="fileInput" class="cursor-pointer">
-                    <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span class="mt-4 block text-sm font-semibold text-slate-700" id="fileName">Select PDF file</span>
-                </label>
-            </div>
+def sort_ticket_data(extracted_list):
+    sorted_rows = []
+    for item in extracted_list:
+        row = {
+            "Date": item.get("Date"),
+            "Ticket": item.get("Ticket_Number"),
+            "Truck ID": item.get("Truck_ID"),
+            "Driver Name": item.get("Driver_Name"),
+            "1= HANGER": "", "1.1-23.99": "", "24-35.99": "", "36-47.99": "", "48+": ""
+        }
+        try:
+            val = float(item.get("Measure", 0))
+            h_type = str(item.get("Hazard_Type", "")).upper()
+            if "HANGER" in h_type:
+                row["1= HANGER"] = 1
+            elif "LEANER" in h_type:
+                if 1.1 <= val <= 23.99: row["1.1-23.99"] = val
+                elif 24.0 <= val <= 35.99: row["24-35.99"] = val
+                elif 36.0 <= val <= 47.99: row["36-47.99"] = val
+                elif val >= 48.0: row["48+"] = val
+        except: pass
+        sorted_rows.append(row)
+    return sorted_rows
 
-            <button type="submit" id="submitBtn" class="mt-8 w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                GENERATE CSV
-            </button>
-        </form>
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-        <div id="loading" class="hidden mt-6 text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-            <p class="text-blue-600 font-bold mt-2">AI is reading tickets...</p>
-        </div>
-    </div>
+@app.route('/process', methods=['POST'])
+def process():
+    api_key = request.form.get('api_key')
+    pdf_file = request.files.get('file')
+    if not api_key or not pdf_file: return "Missing data", 400
 
-    <script>
-        // Update label with file name
-        document.getElementById('fileInput').onchange = function() {
-            document.getElementById('fileName').innerText = this.files[0].name;
-        };
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    pdf_data = base64.b64encode(pdf_file.read()).decode('utf-8')
 
-        document.getElementById('uploadForm').onsubmit = function() {
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').classList.add('opacity-50');
-            document.getElementById('loading').classList.remove('hidden');
-        };
-    </script>
-</body>
-</html>
+    prompt = "Extract all tickets from the PDF. Return a JSON array of objects with keys: Ticket_Number, Date, Truck_ID, Driver_Name, Hazard_Type, Measure. No markdown."
+    
+    response = model.generate_content([{'mime_type': 'application/pdf', 'data': pdf_data}, prompt])
+
+    try:
+        raw_text = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(raw_text)
+        final_data = sort_ticket_data(data)
+        df = pd.DataFrame(final_data)
+        csv_path = "/tmp/extracted_tickets.csv" # Use /tmp for web hosts
+        df.to_csv(csv_path, index=False)
+        return send_file(csv_path, as_attachment=True)
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
