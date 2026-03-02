@@ -6,37 +6,45 @@
     <title>Ticket AI Processor</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6 font-sans">
 
-    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Ticket AI Sorter</h1>
-        <p class="text-gray-600 mb-6">Upload a PDF of tickets to extract and sort into CSV.</p>
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-10">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-800">Ticket Sorter</h1>
+            <p class="text-slate-500 mt-2">Upload your PDF to extract data</p>
+        </div>
 
         <form action="/process" method="POST" enctype="multipart/form-data" id="uploadForm">
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Google AI API Key</label>
-                <input type="password" name="api_key" value="AIzaSyBGMx6WcrNyhvXtm-o_tx-SCmODPg9JHms" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
+                <input type="file" name="file" id="fileInput" accept="application/pdf" class="hidden">
+                <label for="fileInput" class="cursor-pointer">
+                    <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span class="mt-4 block text-sm font-semibold text-slate-700" id="fileName">Select PDF file</span>
+                </label>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700">Select Ticket PDF</label>
-                <input type="file" name="file" accept="application/pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-            </div>
-
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
-                PROCESS & DOWNLOAD CSV
+            <button type="submit" id="submitBtn" class="mt-8 w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                GENERATE CSV
             </button>
         </form>
 
-        <div id="loading" class="hidden mt-6 text-center text-blue-600 font-medium animate-pulse">
-            AI is analyzing tickets... Please wait.
+        <div id="loading" class="hidden mt-6 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+            <p class="text-blue-600 font-bold mt-2">AI is reading tickets...</p>
         </div>
     </div>
 
     <script>
+        // Update label with file name
+        document.getElementById('fileInput').onchange = function() {
+            document.getElementById('fileName').innerText = this.files[0].name;
+        };
+
         document.getElementById('uploadForm').onsubmit = function() {
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').innerText = "Processing...";
+            document.getElementById('submitBtn').classList.add('opacity-50');
             document.getElementById('loading').classList.remove('hidden');
         };
     </script>
