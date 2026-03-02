@@ -1,91 +1,44 @@
-import os
-import json
-import base64
-import pandas as pd
-import google.generativeai as genai
-from flask import Flask, request, render_template, send_file, jsonify
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket AI Processor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
-app = Flask(__name__)
+    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Ticket AI Sorter</h1>
+        <p class="text-gray-600 mb-6">Upload a PDF of tickets to extract and sort into CSV.</p>
 
-# Sorting Logic
-def sort_ticket_data(extracted_list):
-    sorted_rows = []
-    for item in extracted_list:
-        # Default empty columns
-        row = {
-            "Date": item.get("Date"),
-            "Ticket": item.get("Ticket_Number"),
-            "Truck ID": item.get("Truck_ID"),
-            "Driver Name": item.get("Driver_Name"),
-            "1= HANGER": "",
-            "1.1-23.99": "",
-            "24-35.99": "",
-            "36-47.99": "",
-            "48+": ""
-        }
-        
-        try:
-            val = float(item.get("Measure", 0))
-            h_type = str(item.get("Hazard_Type", "")).upper()
+        <form action="/process" method="POST" enctype="multipart/form-data" id="uploadForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Google AI API Key</label>
+                <input type="password" name="api_key" value="AIzaSyBGMx6WcrNyhvXtm-o_tx-SCmODPg9JHms" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
 
-            if "HANGER" in h_type:
-                row["1= HANGER"] = 1
-            elif "LEANER" in h_type:
-                if 1.1 <= val <= 23.99: row["1.1-23.99"] = val
-                elif 24.0 <= val <= 35.99: row["24-35.99"] = val
-                elif 36.0 <= val <= 47.99: row["36-47.99"] = val
-                elif val >= 48.0: row["48+"] = val
-        except:
-            pass
-        sorted_rows.append(row)
-    return sorted_rows
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700">Select Ticket PDF</label>
+                <input type="file" name="file" accept="application/pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                PROCESS & DOWNLOAD CSV
+            </button>
+        </form>
 
-@app.route('/process', methods=['POST'])
-def process():
-    api_key = request.form.get('api_key')
-    pdf_file = request.files.get('file')
+        <div id="loading" class="hidden mt-6 text-center text-blue-600 font-medium animate-pulse">
+            AI is analyzing tickets... Please wait.
+        </div>
+    </div>
 
-    if not api_key or not pdf_file:
-        return "Missing data", 400
-
-    # Configure AI
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
-    # Read PDF and convert to Base64
-    pdf_data = base64.b64encode(pdf_file.read()).decode('utf-8')
-
-    prompt = """
-    Analyze these disaster recovery tickets. Extract all tickets found in the PDF.
-    For each ticket, return a JSON object with:
-    Ticket_Number, Date, Truck_ID (labeled as Crew), Driver_Name (labeled as Supervisor), Hazard_Type (HANGER or LEANER), Measure.
-    Return the result as a JSON array of objects. Do not include markdown formatting.
-    """
-
-    response = model.generate_content([
-        {'mime_type': 'application/pdf', 'data': pdf_data},
-        prompt
-    ])
-
-    try:
-        # Clean AI response to get pure JSON
-        raw_text = response.text.replace('```json', '').replace('```', '').strip()
-        data = json.loads(raw_text)
-        
-        # Sort and Create CSV
-        final_data = sort_ticket_data(data)
-        df = pd.DataFrame(final_data)
-        
-        csv_path = "extracted_tickets.csv"
-        df.to_csv(csv_path, index=False)
-        
-        return send_file(csv_path, as_attachment=True)
-    except Exception as e:
-        return f"Error processing: {str(e)}", 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    <script>
+        document.getElementById('uploadForm').onsubmit = function() {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = "Processing...";
+            document.getElementById('loading').classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
