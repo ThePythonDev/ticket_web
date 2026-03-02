@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket AI Processor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+
+    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Ticket AI Sorter</h1>
+        <p class="text-gray-600 mb-6">Upload a PDF of tickets to extract and sort into CSV.</p>
+
+        <form action="/process" method="POST" enctype="multipart/form-data" id="uploadForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Google AI API Key</label>
+                <input type="password" name="api_key" value="AIzaSyBGMx6WcrNyhvXtm-o_tx-SCmODPg9JHms" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700">Select Ticket PDF</label>
+                <input type="file" name="file" accept="application/pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                PROCESS & DOWNLOAD CSV
+            </button>
+        </form>
+
+        <div id="loading" class="hidden mt-6 text-center text-blue-600 font-medium animate-pulse">
+            AI is analyzing tickets... Please wait.
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = function() {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = "Processing...";
+            document.getElementById('loading').classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
