@@ -6,38 +6,58 @@
     <title>Ticket AI Processor</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6">
 
-    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Ticket AI Sorter</h1>
-        <p class="text-gray-600 mb-6">Upload a PDF of tickets to extract and sort into CSV.</p>
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">Ticket Sorter</h1>
+            <p class="text-slate-500 mt-2 font-medium">Native AI PDF Extraction</p>
+        </div>
 
         <form action="/process" method="POST" enctype="multipart/form-data" id="uploadForm">
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Google AI API Key</label>
-                <input type="password" name="api_key" value="AIzaSyBGMx6WcrNyhvXtm-o_tx-SCmODPg9JHms" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <div class="group relative border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center hover:border-blue-500 transition-all bg-slate-50">
+                <input type="file" name="file" id="fileInput" accept="application/pdf" class="hidden">
+                <label for="fileInput" class="cursor-pointer">
+                    <div class="bg-white rounded-full p-4 shadow-sm inline-block mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+                    <span class="block text-lg font-bold text-slate-700" id="fileName">Drop Ticket PDF Here</span>
+                    <span class="text-sm text-slate-400">or click to browse</span>
+                </label>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700">Select Ticket PDF</label>
-                <input type="file" name="file" accept="application/pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-            </div>
-
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
-                PROCESS & DOWNLOAD CSV
+            <button type="submit" id="submitBtn" class="mt-8 w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:translate-y-0">
+                GENERATE SORTED CSV
             </button>
         </form>
 
-        <div id="loading" class="hidden mt-6 text-center text-blue-600 font-medium animate-pulse">
-            AI is analyzing tickets... Please wait.
+        <div id="loading" class="hidden mt-8 text-center space-y-4">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+            <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">AI Analyzing & Sorting...</p>
         </div>
     </div>
 
     <script>
-        document.getElementById('uploadForm').onsubmit = function() {
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').innerText = "Processing...";
-            document.getElementById('loading').classList.remove('hidden');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+
+        fileInput.onchange = function() {
+            if (this.files.length > 0) {
+                fileName.innerText = this.files[0].name;
+                fileName.classList.add('text-blue-600');
+            }
+        };
+
+        uploadForm.onsubmit = function() {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-0');
+            submitBtn.classList.add('pointer-events-none');
+            loading.classList.remove('hidden');
         };
     </script>
 </body>
